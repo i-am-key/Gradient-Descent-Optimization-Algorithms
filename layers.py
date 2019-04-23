@@ -181,7 +181,7 @@ class FullyConnected(object):
     def adagrad(self):
         eps = 1e-10
         self.g_w += self.dw**2
-        self.w -= self.lr * self.dw / (np.sqrt(self.g_w) + eps)
+        self.w  -= self.lr * self.dw / (np.sqrt(self.g_w) + eps)
         self.g_b += self.db**2
         self.b -= self.lr * self.db / (np.sqrt(self.g_b) + eps)
 

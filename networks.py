@@ -3,8 +3,10 @@ from layers import *
 from utils import *
 
 
-def convNet(train, val, test, nepochs, batch_size, in_channels, out_channels, 
-            conv_kernel_size, lr, conv_stride, padding, pool_kernel_size, pool_stride, momentum=0):
+def convNet(train, val, test, nepochs, batch_size, in_channels, out_channels, conv_kernel_size, 
+            lr, conv_stride, padding, pool_kernel_size, pool_stride, apply_early_stop=False, momentum=0):
+    early_stop_index = 0
+    min_loss = 100
     training_losses = []
     training_accs = []
     validation_losses = []
@@ -62,13 +64,13 @@ def convNet(train, val, test, nepochs, batch_size, in_channels, out_channels,
             conv.backward(d_relu1_out)
             # change update method
             # ##### (1) vanilla sgd, sgd with momentum or sgd with Nesterov momentum #####
-            # fc1.SGD()
-            # fc2.SGD()
-            # conv.SGD()
+            fc1.SGD()
+            fc2.SGD()
+            conv.SGD()
             # ##### (2) adam #####
-            fc1.adam(t)
-            fc2.adam(t)
-            conv.adam(t)
+            # fc1.adam(t)
+            # fc2.adam(t)
+            # conv.adam(t)
             # ##### (3) adagrad #####
             # fc1.adagrad()
             # fc2.adagrad()
@@ -112,6 +114,12 @@ def convNet(train, val, test, nepochs, batch_size, in_channels, out_channels,
         print("epoch:", e + 1, "val loss: ", np.mean(val_loss), "val acc: ", np.mean(val_acc))
         validation_losses.append(np.mean(val_loss))
         validation_accs.append(np.mean(val_acc))
+        if apply_early_stop:
+            if e > 0:
+                [is_early_stop, min_loss, early_stop_index] = \
+                    early_stopping(min_loss, np.mean(val_loss), early_stop_index)
+                if is_early_stop:
+                    break
 
     test_loss = []
     test_acc = []
@@ -144,7 +152,10 @@ def convNet(train, val, test, nepochs, batch_size, in_channels, out_channels,
     return training_losses, training_accs, validation_losses, validation_accs, \
            test_losses, test_accs, e + 1, weight_matrix
 
-def neuralNet(train, val, test, nepochs, batch_size, input_size, output_size, hiddens, lr):
+def neuralNet(train, val, test, nepochs, batch_size, input_size, output_size, hiddens, 
+            lr, apply_early_stop=False, momentum=0):
+    early_stop_index = 0
+    min_loss = 100
     fc1 = FullyConnected(input_size, hiddens[0], lr)
     fc2 = FullyConnected(hiddens[0], hiddens[1], lr)
     fc3 = FullyConnected(hiddens[1], output_size, lr)
@@ -194,17 +205,17 @@ def neuralNet(train, val, test, nepochs, batch_size, input_size, output_size, hi
             # fc2.SGD()
             # fc3.SGD()
             # ##### (2) adam #####
-            # fc1.adam(t)
-            # fc2.adam(t)
-            # fc3.adam(t)
+            fc1.adam(t)
+            fc2.adam(t)
+            fc3.adam(t)
             # ##### (3) adagrad #####
             # fc1.adagrad()
             # fc2.adagrad()
             # fc3.adagrad()
             # ##### (4) RMSprop #####
-            fc1.RMSprop()
-            fc2.RMSprop()
-            fc3.RMSprop()
+            # fc1.RMSprop()
+            # fc2.RMSprop()
+            # fc3.RMSprop()
             t += 1
 
 
@@ -230,10 +241,15 @@ def neuralNet(train, val, test, nepochs, batch_size, input_size, output_size, hi
             acc = float((val_predict_label == val_original_label).astype(int).sum()) / float(val_original_label.shape[0])
             val_loss.append(loss)
             val_acc.append(acc)
-
         print("epoch:", e + 1, "val loss: ", np.mean(val_loss), "val acc: ", np.mean(val_acc))
         validation_losses.append(np.mean(val_loss))
         validation_accs.append(np.mean(val_acc))
+        if apply_early_stop:
+            if e > 0:
+                [is_early_stop, min_loss, early_stop_index] = \
+                    early_stopping(min_loss, np.mean(val_loss), early_stop_index)
+                if is_early_stop:
+                    break
 
     test_loss = []
     test_acc = []
@@ -257,3 +273,14 @@ def neuralNet(train, val, test, nepochs, batch_size, input_size, output_size, hi
     test_accs = np.mean(test_acc)
     return training_losses, training_accs, validation_losses, validation_accs, \
            test_losses, test_accs, e + 1
+
+
+def early_stopping(min_loss, current_loss, early_stop_index):
+    if current_loss < min_loss:
+        min_loss = current_loss
+        early_stop_index = 0
+    else:
+        early_stop_index += 1
+    if early_stop_index == 10:
+        return True, min_loss, early_stop_index
+    return False, min_loss, early_stop_index
