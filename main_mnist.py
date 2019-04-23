@@ -9,7 +9,7 @@ if __name__ == '__main__':
     val = get_data(val_fr)
     test = get_data(test_fr)
     [training_losses, training_accs, validation_losses, validation_accs, test_losses, test_accs, epoch] = \
-        neuralNet(train, val, test, nepochs=10, batch_size=32, input_size=1568, output_size=19, hiddens=[200,100], lr=0.1)
+        neuralNet(train, val, test, nepochs=10, batch_size=32, input_size=1568, output_size=19, hiddens=[200,100], lr=0.01)
     print("training losses: ", training_losses)
     print("validation losses: ", validation_losses)
     print("test losses: ", test_losses)

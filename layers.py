@@ -19,6 +19,10 @@ class Conv2d(object):
         self.col_w = None
         self.lr = lr
         self.momentum = momentum
+        # decaying averages of past
+        self.m_w = np.zeros((out_channels, in_channels, kernel_size, kernel_size))
+        # past squared gradients 
+        self.v_w = np.zeros((out_channels, in_channels, kernel_size, kernel_size))
 
     def forward(self, x):
         self.x = x
@@ -56,6 +60,17 @@ class Conv2d(object):
         else:
             self.vdw = -self.lr * self.dw + self.momentum * self.vdw
             self.w += self.vdw
+
+    def adam(self, t):
+        beta1 = 0.9
+        beta2 = 0.999
+        e = 1e-4
+        self.m_w = beta1 * self.m_w + (1. - beta1) * self.dw
+        self.v_w = beta2 * self.v_w + (1. - beta2) * (self.dw**2)
+        self.mt_w = self.m_w / (1. - beta1**(t))
+        self.vt_w = self.v_w / (1. - beta2**(t))
+        self.w -= self.lr * self.mt_w / (np.sqrt(self.vt_w) + e)
+        
 
 
 class MaxPool2d(object):
@@ -98,6 +113,13 @@ class FullyConnected(object):
         self.b = np.zeros((1, output_size))
         self.vdb = np.zeros((1, output_size))
         self.momentum = momentum
+        # decaying averages of past
+        self.m_w = np.zeros((input_size, output_size))
+        self.m_b = np.zeros((1, output_size))
+        # past squared gradients 
+        self.v_w = np.zeros((input_size, output_size))
+        self.v_b = np.zeros((1, output_size))
+
 
     def forward(self, x):
         self.x = x
@@ -123,7 +145,24 @@ class FullyConnected(object):
             self.w += self.vdw
             self.vdb = -self.lr * self.db + self.momentum * self.vdb
             self.b += self.vdb
-        
+    
+    def adam(self, t):
+        beta1 = 0.9
+        beta2 = 0.999
+        e = 1e-4
+        self.m_w = beta1 * self.m_w + (1. - beta1) * self.dw
+        self.m_b = beta1 * self.m_b + (1. - beta1) * self.db
+        self.v_w = beta2 * self.v_w + (1. - beta2) * (self.dw**2)
+        self.v_b = beta2 * self.v_b + (1. - beta2) * (self.db**2)
+        self.mt_w = self.m_w / (1. - beta1**(t))
+        self.vt_w = self.v_w / (1. - beta2**(t))
+        self.mt_b = self.m_b / (1. - beta1**(t))
+        self.vt_b = self.v_b / (1. - beta2**(t))
+        self.w -= self.lr * self.mt_w / (np.sqrt(self.vt_w) + e)
+        self.b -= self.lr * self.mt_b / (np.sqrt(self.vt_b) + e)
+        # print(self.w)
+
+
 
 class Sigmoid(object):
     def __init__(self):

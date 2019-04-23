@@ -19,6 +19,7 @@ def convNet(train, val, test, nepochs, batch_size, in_channels, out_channels,
     loss_func = SoftmaxCrossEntropy()
     train_data_all = train["data"]
     train_label_all = train["labels"]
+    t = 1
     for e in range(nepochs):
         train_loss = []
         train_acc = []
@@ -54,19 +55,23 @@ def convNet(train, val, test, nepochs, batch_size, in_channels, out_channels,
             dout = loss_func.backward()
             d_fc2_out = fc2.backward(dout)
             # change update method
-            fc2.SGD()
+            # fc2.SGD()
+            fc2.adam(t)
             # fc2.momentum_SGD()
             d_relu2_out = relu2.derivative() * d_fc2_out
             d_fc1_out = fc1.backward(d_relu2_out)
             # change update method
-            fc1.SGD()
+            # fc1.SGD()
+            fc1.adam(t)
             # fc1.momentum_SGD()
             d_fc1_out  = d_fc1_out.reshape(*original_shape)
             d_pool_out = pool.backward(d_fc1_out)
             d_relu1_out = relu1.derivative() * d_pool_out
             conv.backward(d_relu1_out)
             # change update method
-            conv.SGD()
+            conv.adam(t)
+            # conv.SGD()
+            t += 1
             # conv.momentum_SGD()
 
         print("epoch:", e + 1, "train loss: ", np.mean(train_loss), "train acc: ", np.mean(train_acc))
@@ -146,6 +151,7 @@ def neuralNet(train, val, test, nepochs, batch_size, input_size, output_size, hi
     training_accs = []
     validation_losses = []
     validation_accs = []
+    t = 1
     for e in range(nepochs):
         train_loss = []
         train_acc = []
@@ -178,9 +184,13 @@ def neuralNet(train, val, test, nepochs, batch_size, input_size, output_size, hi
             d_relu1_out = relu1.derivative() * d_fc2_out
             d_fc1_out = fc1.backward(d_relu1_out)
             # change update method
-            fc1.SGD()
-            fc2.SGD()
-            fc3.SGD()
+            # fc1.SGD()
+            # fc2.SGD()
+            # fc3.SGD()
+            fc1.adam(t)
+            fc2.adam(t)
+            fc3.adam(t)
+            t += 1
 
 
         print("epoch:", e + 1, "train loss: ", np.mean(train_loss), "train acc: ", np.mean(train_acc))
